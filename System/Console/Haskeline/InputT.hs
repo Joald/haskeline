@@ -19,6 +19,7 @@ import Data.IORef
 import System.Directory(getHomeDirectory)
 import System.FilePath
 import System.IO
+import UnliftIO (MonadUnliftIO, withRunInIO)
 
 -- | Application-specific customizations to the user interface.
 data Settings m = Settings {complete :: CompletionFunc m, -- ^ Custom tab completion.
@@ -64,6 +65,9 @@ instance ( Fail.MonadFail m ) => Fail.MonadFail (InputT m) where
 
 instance ( MonadFix m ) => MonadFix (InputT m) where
     mfix f = InputT (mfix (unInputT . f))
+
+instance MonadUnliftIO m => MonadUnliftIO (InputT m) where
+  withRunInIO inner = InputT $ withRunInIO $ \run -> inner (\inputt -> run $ unInputT inputt)
 
 -- | Get the current line input history.
 getHistory :: MonadIO m => InputT m History
